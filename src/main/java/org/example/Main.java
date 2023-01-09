@@ -3,18 +3,21 @@ package org.example;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.*;
 
 public class Main {
+    private static final int THREAD_POOL_LIMIT = 4;
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         String[] texts = new String[25];
         for (int i = 0; i < texts.length; i++) {
             texts[i] = generateText("aab", 30_000);
         }
-        List<Thread> threads = new ArrayList<>();
+        ExecutorService executorService = Executors.newFixedThreadPool(THREAD_POOL_LIMIT);
+        List<Future<Integer>> futureList = new ArrayList<>();
         long startTs = System.currentTimeMillis(); // start time
         for (String text : texts) {
-            Runnable task = () -> {
+            Callable<Integer> task = () -> {
                 int maxSize = 0;
                 for (int i = 0; i < text.length(); i++) {
                     for (int j = 0; j < text.length(); j++) {
@@ -34,17 +37,20 @@ public class Main {
                     }
                 }
                 System.out.println(text.substring(0, 100) + " -> " + maxSize);
+                return maxSize;
             };
-            Thread thread = new Thread(task);
-            thread.start();
-            threads.add(thread);
+            Future<Integer> taskResult = executorService.submit(task);
+            futureList.add(taskResult);
         }
-        for (Thread thread : threads) {
-            thread.join();
+        int maxLen = 0;
+        for (Future<Integer> task : futureList) {
+            maxLen = Math.max(maxLen, task.get());
         }
         long endTs = System.currentTimeMillis(); // end time
 
         System.out.println("Time: " + (endTs - startTs) + "ms");
+        System.out.println("Максимальная длина " + maxLen);
+        executorService.shutdown();
     }
 
     public static String generateText(String letters, int length) {
