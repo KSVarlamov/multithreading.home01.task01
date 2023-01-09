@@ -14,32 +14,30 @@ public class Main {
         List<Thread> threads = new ArrayList<>();
         long startTs = System.currentTimeMillis(); // start time
         for (String text : texts) {
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    int maxSize = 0;
-                    for (int i = 0; i < text.length(); i++) {
-                        for (int j = 0; j < text.length(); j++) {
-                            if (i >= j) {
-                                continue;
-                            }
-                            boolean bFound = false;
-                            for (int k = i; k < j; k++) {
-                                if (text.charAt(k) == 'b') {
-                                    bFound = true;
-                                    break;
-                                }
-                            }
-                            if (!bFound && maxSize < j - i) {
-                                maxSize = j - i;
+            Runnable task = () -> {
+                int maxSize = 0;
+                for (int i = 0; i < text.length(); i++) {
+                    for (int j = 0; j < text.length(); j++) {
+                        if (i >= j) {
+                            continue;
+                        }
+                        boolean bFound = false;
+                        for (int k = i; k < j; k++) {
+                            if (text.charAt(k) == 'b') {
+                                bFound = true;
+                                break;
                             }
                         }
+                        if (!bFound && maxSize < j - i) {
+                            maxSize = j - i;
+                        }
                     }
-                    System.out.println(text.substring(0, 100) + " -> " + maxSize);
                 }
-            });
-            threads.add(t);
-            t.start();
+                System.out.println(text.substring(0, 100) + " -> " + maxSize);
+            };
+            Thread thread = new Thread(task);
+            thread.start();
+            threads.add(thread);
         }
         for (Thread thread : threads) {
             thread.join();
